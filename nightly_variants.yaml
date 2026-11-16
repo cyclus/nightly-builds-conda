@@ -1,0 +1,41 @@
+# Overrides of the conda-forge global pinning (conda_build_config.yaml of the
+# conda-forge-pinning package) for the nightly builds. Only keys that the
+# nightlies deliberately build differently belong here. Everything else, e.g.
+# the compilers, c_stdlib_version, and every other library pin, comes from the
+# global pinning unchanged.
+
+# Only the oldest and the newest supported Python, to keep the number of builds
+# per night small. python and is_python_min are zipped in the global pinning, so
+# both lists must have the same length.
+# 3.15 is still added by the python315 migration of the pinning (as on the
+# cyclus feedstock); once it is in the global pinning, only the python_min
+# entry has to be kept up to date here.
+python:
+  - 3.11.* *_cpython
+  - 3.15.* *_cp315
+is_python_min:
+  - true
+  - false
+
+# The cyclus feedstock builds for HDF5 2 through the hdf52 migration while the
+# global pin is still 1.14.6; the nightlies build only for HDF5 2. Remove this
+# once the global pin is HDF5 2.
+hdf5:
+  - "2"
+
+# As on the cyclus feedstock through the libboost190 migration. Remove this
+# once the global pin is Boost 1.90 or newer.
+libboost_devel:
+  - "1.90"
+libboost_headers:
+  - "1.90"
+libboost_python_devel:
+  - "1.90"
+
+# The cycamore and cymetric nightlies build against cyclus and cycamore
+# nightlies, which come from this channel when the run did not rebuild them.
+# Given as channel_sources (comma separated, as in the global pinning), as
+# rattler-build refuses --channel alongside the channel_sources key of the
+# global pinning.
+channel_sources:
+  - https://prefix.dev/cyclus/nightly,conda-forge
