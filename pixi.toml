@@ -13,6 +13,15 @@ rattler-build = ">=0.80.1,<0.81"
 # which the hourly runs then build with.
 conda-forge-pinning = "*"
 
+[feature.plan.dependencies]
+python = ">=3.15.2,<3.16"
+pyyaml = ">=6.0.3,<7"
+
+# Only the tools of scripts/plan_builds.py, which renders the recipes in the
+# default environment, so that the plan is made with the pinning of the builds
+[environments]
+plan = { features = ["plan"], no-default-feature = true }
+
 [tasks.resolve]
 # Prints the <PACKAGE>_GIT_REV and <PACKAGE>_VERSION that the recipes read,
 # e.g. for all packages
@@ -20,6 +29,11 @@ conda-forge-pinning = "*"
 args = ["package"]
 cmd = "bash scripts/resolve_source.sh {{ package }}"
 description = "Resolve the git revision and version of the main branch of a cyclus/<package> repository"
+
+[feature.plan.tasks.plan]
+# Extra arguments are passed to the script, e.g. --all to plan every job
+cmd = "python scripts/plan_builds.py"
+description = "Print the build jobs needed for packages not yet in the nightly channel, as JSON lists for the CI matrices"
 
 [tasks.build]
 # Extra arguments are passed to rattler-build and must select the recipes,
