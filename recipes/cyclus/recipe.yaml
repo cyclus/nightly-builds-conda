@@ -1,0 +1,170 @@
+# Nightly build of the main branch of cyclus. Based on the recipe of
+# https://github.com/conda-forge/cyclus-feedstock, with the source and version
+# taken from the environment (see scripts/resolve_source.sh).
+# Unlike the feedstock, no patches are applied: the backports the feedstock
+# carries are all in main, and the nightlies build main as it is.
+schema_version: 1
+
+context:
+  # No defaults, so that a build without scripts/resolve_source.sh fails
+  # instead of building an arbitrary revision under a made-up version.
+  version: ${{ env.get("CYCLUS_VERSION") }}
+  git_rev: ${{ env.get("CYCLUS_GIT_REV") }}
+
+package:
+  name: cyclus
+  version: ${{ version }}
+
+source:
+  git: https://github.com/cyclus/cyclus.git
+  rev: ${{ git_rev }}
+
+build:
+  # The file name of a nightly must only change when its inputs do, as the
+  # planning job of the workflow builds exactly the packages whose file names
+  # are not yet in the channel: the version changes with the commit, and the
+  # hash with the pins the recipe uses. Bump this when a change to the recipe
+  # needs new packages. It is not reset when the version changes.
+  number: 0
+  skip:
+    - win
+  # --deps-root: cyclus otherwise derives DEPS_ROOT_DIR from the compiler location
+  # (BUILD_PREFIX)
+  # --slow: compiles the PyNE decay and CRAM solvers from decay.cpp and cram.c
+  # instead of downloading prebuilt {decay,cram}-<os>-<compiler>.s assembly, which
+  # is x86_64 only and fails to assemble on linux-aarch64 and osx-arm64
+  # -DPYTHON_SITE_PACKAGES: cyclus otherwise installs its Python modules into the
+  # user site (python -m site --user-site), which is under $HOME, i.e. $SRC_DIR
+  # in rattler-build, so they would be missing from the package
+  script: >-
+    "${PYTHON}" install.py
+    --prefix="${PREFIX}"
+    --deps-root="${PREFIX}"
+    --allow-milps
+    --slow
+    ${CMAKE_ARGS}
+    -DPython3_EXECUTABLE="${PYTHON}"
+    -DPYTHON_SITE_PACKAGES="${SP_DIR}"
+    -j "${CPU_COUNT}"
+
+requirements:
+  build:
+    - ${{ stdlib("c") }}
+    # the PyNE CRAM solver (cram.c) is C
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make
+    - pkgconf
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - cython
+  host:
+    - coin-or-cbc
+    # libcyclus links Clp, OsiClp, Osi, and CoinUtils directly, not only through
+    # Cbc; listed so their run_exports apply instead of overlinking against them
+    - coin-or-clp
+    - coin-or-osi
+    - coin-or-utils
+    - libboost-devel
+    # headers and libxml++-4.0.pc moved out of libxmlpp-4.0 into libxmlpp-devel
+    # in build 4; 5.x is libxml++-5.0, which cyclus does not probe for
+    - libxmlpp-devel 4.*
+    # libxml++-4.0 is built on glibmm and cyclus links to libglibmm-2.68 directly
+    # (Glib::ustring in relax_ng_validator.h); listed so its run_export applies
+    # rather than relying on it arriving through libxmlpp-devel
+    - glibmm-2.68
+    - libxml2
+    # headers and the libxml2.so dev symlink moved out of libxml2 in 2.14
+    - libxml2-devel
+    - liblapack
+    - blis
+    - hdf5
+    - sqlite
+    - glib
+    - python
+    # cyclus embeds the interpreter and links to libpython, which is a separate
+    # package from Python 3.15 on (https://conda-forge.org/blog/2026/09/03/python-315/);
+    # for older versions python already depends on the matching libpython
+    - libpython
+    - pandas
+    - cython
+    # build-time code generation runs under the host python; keeping jinja2 out
+    # of build: avoids a second interpreter in BUILD_PREFIX that CMake finds first
+    - jinja2
+    # build backend of setup.py, used by the pip install below
+    - setuptools
+    # CMakeLists.txt installs the pure-python package with `python -m pip install
+    # --no-deps --target=$SP_DIR .` at `make install` time (a failure there is
+    # non-fatal); rattler-build's PIP_NO_BUILD_ISOLATION/PIP_NO_INDEX keep it offline
+    - pip
+  run:
+    - coin-or-cbc
+    - libboost-devel
+    # the installed headers include libxml++ and glibmm headers
+    - libxmlpp-devel 4.*
+    - libxml2
+    - liblapack
+    - blis
+    - hdf5
+    - sqlite
+    - glib
+    - python
+    - pandas
+    - pprintpp
+  run_exports:
+    # downstream archetype libraries (e.g. cycamore) link to libcyclus
+    - ${{ pin_subpackage("cyclus", upper_bound="x.x") }}
+
+tests:
+  - package_contents:
+      lib:
+        - cyclus
+      bin:
+        - cyclus
+        - cycpp.py
+      files:
+        - share/cyclus/cyclus_default_unit_test_driver.cc
+        - share/cyclus/cyclus-flat.rng.in
+        - share/cyclus/cyclus_nuc_data.h5
+        - share/cyclus/cyclus.rng.in
+        - share/cyclus/dbtypes.json
+
+  - files:
+      source:
+        - tests
+        # generated from share/dbtypes.json.in at configure time
+        - share/dbtypes.json
+        - src/hdf5_back_gen.py
+    requirements:
+      run:
+        - which
+        - cxx-compiler
+        - pytest
+        - pytables
+    script:
+      - which cyclus
+
+      - cyclus --version
+      - cyclus --path
+      - cyclus --include
+      - cyclus --install-path
+      - cyclus --cmake-module-path
+      - cyclus --build-path
+      - cyclus --rng-schema
+      - cyclus --nuc-data
+
+      - cyclus_unit_tests
+
+      - cd tests
+      - pytest -vv
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.rst
+  summary: The agent-based fuel cycle simulator (nightly build of the main branch).
+  homepage: https://fuelcycle.org/
+  repository: https://github.com/cyclus/cyclus
+  documentation: https://fuelcycle.org/
