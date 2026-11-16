@@ -1,0 +1,95 @@
+# Nightly build of the main branch of cycamore against the nightly build of the
+# main branch of cyclus. Based on the recipe of
+# https://github.com/conda-forge/cycamore-feedstock, with the source and version
+# taken from the environment (see scripts/resolve_source.sh).
+schema_version: 1
+
+context:
+  # No defaults, so that a build without scripts/resolve_source.sh fails
+  # instead of building an arbitrary revision under a made-up version.
+  version: ${{ env.get("CYCAMORE_VERSION") }}
+  git_rev: ${{ env.get("CYCAMORE_GIT_REV") }}
+
+package:
+  name: cycamore
+  version: ${{ version }}
+
+source:
+  git: https://github.com/cyclus/cycamore.git
+  rev: ${{ git_rev }}
+  patches:
+    # Boost 1.89 removed the compiled Boost.System stub library and Boost 1.89 to
+    # 1.91 have no CMake package for it, so requiring the system component fails;
+    # same change as made to cyclus in https://github.com/cyclus/cyclus/pull/1985,
+    # not yet made in cycamore
+    - patches/make-the-system-component-of-Boost-optional.patch
+
+build:
+  # See recipes/cyclus/recipe.yaml for when to bump this.
+  number: 0
+  skip: win
+  # install.py does not use CMAKE_ARGS itself, but passes -D options to CMake, so
+  # pass CMAKE_ARGS (each a -D option) to keep CMake from finding libraries and
+  # frameworks on the runner (e.g. Homebrew), and pin Python3 to the host Python
+  script: >-
+    "${PYTHON}" install.py
+    --prefix="${PREFIX}"
+    ${CMAKE_ARGS}
+    -DPython3_EXECUTABLE="${PYTHON}"
+    -j "${CPU_COUNT}"
+
+requirements:
+  build:
+    - ${{ stdlib("c") }}
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make
+    - pkgconf
+  host:
+    - python
+    # The cyclus variant key (set by the build task in pixi.toml) pins this
+    # to the cyclus nightly of this run and puts its version into the hash,
+    # so that cycamore is rebuilt for every new cyclus nightly.
+    - cyclus
+    # libcycamore links to libhdf5 and libglibmm-2.68 directly
+    - hdf5
+    - glibmm-2.68
+  run:
+    - python
+    # libcycamore is only tested against, and the cyclus ABI is only stable
+    # within, the cyclus nightly it was built with
+    - cyclus ==${{ cyclus }}
+  run_exports:
+    - ${{ pin_subpackage("cycamore", upper_bound="x.x") }}
+
+tests:
+  - package_contents:
+      lib:
+        - cyclus/libcycamore
+      bin:
+        - cycamore_unit_tests
+
+  - files:
+      source:
+        - input
+        - tests
+    requirements:
+      run:
+        - pytest
+        - pytables
+    script:
+      - cyclus -l :cycamore
+
+      - cycamore_unit_tests
+
+      - cd tests
+      - pytest -vv
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.rst
+  summary: The Cyclus additional modules repository (nightly build of the main branch).
+  homepage: https://fuelcycle.org/
+  repository: https://github.com/cyclus/cycamore
+  documentation: https://fuelcycle.org/
