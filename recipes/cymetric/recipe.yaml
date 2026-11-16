@@ -1,0 +1,79 @@
+# Nightly build of the main branch of cymetric against the nightly builds of the
+# main branches of cyclus and cycamore. Based on the recipe of
+# https://github.com/conda-forge/cymetric-feedstock, with the source and version
+# taken from the environment (see scripts/resolve_source.sh).
+schema_version: 1
+
+context:
+  # No defaults, so that a build without scripts/resolve_source.sh fails
+  # instead of building an arbitrary revision under a made-up version.
+  version: ${{ env.get("CYMETRIC_VERSION") }}
+  git_rev: ${{ env.get("CYMETRIC_GIT_REV") }}
+
+package:
+  name: cymetric
+  version: ${{ version }}
+
+source:
+  git: https://github.com/cyclus/cymetric.git
+  rev: ${{ git_rev }}
+
+build:
+  # See recipes/cyclus/recipe.yaml for when to bump this.
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  variant:
+    # cyclus and cycamore are not build or host dependencies, so their variant
+    # keys (set by the build task in pixi.toml) only go into the hash if listed
+    # here. This rebuilds and retests cymetric for every new cyclus or
+    # cycamore nightly.
+    use_keys:
+      - cyclus
+      - cycamore
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    # only tested against the cyclus nightly of the same run
+    - cyclus ==${{ cyclus }}
+    - jinja2
+    - numpy
+    - matplotlib-base
+    - pandas
+    - pytables
+    - __unix
+
+tests:
+  - python:
+      imports:
+        - cymetric
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+      pip_check: true
+
+  - files:
+      source:
+        - tests
+    requirements:
+      run:
+        - pytest
+        # tests/test-input.xml uses cycamore agents to generate the test databases
+        - cycamore ==${{ cycamore }}
+    script:
+      # tests/tools.py runs cyclus on test-input.xml relative to the cwd
+      - cd tests
+      - pytest -vv
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.rst
+  summary: Cyclus Metrics (nightly build of the main branch).
+  homepage: https://fuelcycle.org/
+  repository: https://github.com/cyclus/cymetric
+  documentation: https://fuelcycle.org/user/cymetric/index.html
