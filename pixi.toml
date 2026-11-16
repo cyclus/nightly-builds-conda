@@ -1,0 +1,60 @@
+[workspace]
+name = "nightly-builds-conda"
+description = "Nightly builds of the Cyclus ecosystem as conda packages"
+channels = ["conda-forge"]
+platforms = ["linux-64", "linux-aarch64", "osx-arm64"]
+
+# The default environment is all that the build and upload jobs install.
+[dependencies]
+rattler-build = ">=0.80.1,<0.81"
+# Provides $CONDA_PREFIX/conda_build_config.yaml, the conda-forge global
+# pinning that conda-forge feedstocks are rendered from. The nightly run of
+# CI updates it with 'pixi update conda-forge-pinning' and commits pixi.lock,
+# which the hourly runs then build with.
+conda-forge-pinning = "*"
+
+[feature.plan.dependencies]
+python = ">=3.15.2,<3.16"
+pyyaml = ">=6.0.3,<7"
+
+# Only the tools of scripts/plan_builds.py, which renders the recipes in the
+# default environment, so that the plan is made with the pinning of the builds
+[environments]
+plan = { features = ["plan"], no-default-feature = true }
+
+[tasks.resolve]
+# Prints the <PACKAGE>_GIT_REV and <PACKAGE>_VERSION that the recipes read,
+# e.g. for all packages
+#   for p in cyclus cycamore cymetric; do eval "$(pixi run resolve $p | sed 's/^/export /')"; done
+args = ["package"]
+cmd = "bash scripts/resolve_source.sh {{ package }}"
+description = "Resolve the git revision and version of the main branch of a cyclus/<package> repository"
+
+[feature.plan.tasks.plan]
+# Extra arguments are passed to the script, e.g. --all to plan every job
+cmd = "python scripts/plan_builds.py"
+description = "Print the build jobs needed for packages not yet in the nightly channel, as JSON lists for the CI matrices"
+
+[tasks.build]
+# Extra arguments are passed to rattler-build and must select the recipes,
+# e.g. all of them in dependency order, or a single variant of one
+#   pixi run build --recipe-dir recipes
+#   pixi run build --recipe recipes/cycamore --variant 'python=3.15.* *_cp315' --variant is_python_min=false
+# The nightly variants are passed after the global pinning so that they
+# override it. No --channel is given, as rattler-build refuses it alongside
+# the channel_sources key, which nightly_variants.yaml sets.
+# The versions of the upstream nightlies are the variant keys cyclus and
+# cycamore that the downstream recipes depend on (e.g. cyclus ==${{ cyclus }}).
+# This pins them to the nightlies of the same run and puts the upstream
+# versions into their hashes, so that a new cyclus nightly changes the file
+# names of the cycamore and cymetric nightlies, while a new cycamore nightly
+# leaves those of cyclus unchanged. Rendering fails if they are not set.
+cmd = """
+rattler-build build \
+--variant-config "$CONDA_PREFIX/conda_build_config.yaml" \
+--variant-config nightly_variants.yaml \
+--variant "cyclus=$CYCLUS_VERSION" \
+--variant "cycamore=$CYCAMORE_VERSION" \
+--output-dir output
+"""
+description = "Build and test recipes against the conda-forge global pinning"
