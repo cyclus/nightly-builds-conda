@@ -31,7 +31,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/patchelf-0.19.3-hee9eb32_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/rattler-build-0.80.1-hf01adef_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.10.23-hbd8a1cb_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/conda-forge-pinning-2026.11.16.12.42.28-hd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/conda-forge-pinning-2026.11.17.11.16.34-hd8ed1ab_1.conda
       linux-aarch64:
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/_openmp_mutex-4.5-20_gnu.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/libgcc-16.2.0-h205dda4_7.conda
@@ -41,9 +41,9 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/patchelf-0.19.3-hfb11796_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/rattler-build-0.80.1-hc342849_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.10.23-hbd8a1cb_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/conda-forge-pinning-2026.11.16.12.42.28-hd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/conda-forge-pinning-2026.11.17.11.16.34-hd8ed1ab_1.conda
       osx-arm64:
-      - conda: https://conda.anaconda.org/conda-forge/noarch/conda-forge-pinning-2026.11.16.12.42.28-hd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/conda-forge-pinning-2026.11.17.11.16.34-hd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcxx-23.1.5-hc645fd0_2.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/rattler-build-0.80.1-h2ace698_0.conda
   lint:
@@ -805,14 +805,14 @@ packages:
   run_exports: {}
   size: 130057
   timestamp: 1792772446739
-- conda: https://conda.anaconda.org/conda-forge/noarch/conda-forge-pinning-2026.11.16.12.42.28-hd8ed1ab_1.conda
-  sha256: 57a18f3f1c5b52fb4b341890bc5c6537b7cd46280f282773462a7acb80141d4c
-  md5: c5209df0730a0cbf5b29f4c418a7f50c
+- conda: https://conda.anaconda.org/conda-forge/noarch/conda-forge-pinning-2026.11.17.11.16.34-hd8ed1ab_1.conda
+  sha256: 433386cea7da54dfe08516d74b587383dce2faa6f77221398f5294f32961c274
+  md5: 2c3952984059abba7a45b8f8f62d574d
   license: BSD-3-Clause
   license_family: BSD
   run_exports: {}
-  size: 70045
-  timestamp: 1794832954279
+  size: 71571
+  timestamp: 1794914200887
 - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.15-9_cp315.conda
   build_number: 9
   sha256: 976c4a6db967a62385aa633daaab19a929f986b979a7ad836b8b70e15ca7aefd
