@@ -15,6 +15,10 @@ on:
     paths-ignore:
       - "**.md"
       - LICENSE
+      # Only checked by .github/workflows/lint.yml
+      - .pre-commit-config.yaml
+      - .github/dependabot.yml
+      - .github/workflows/lint.yml
   schedule:
     # Minute 17, as GitHub delays scheduled runs at the top of the hour the most
     - cron: "17 * * * *"
@@ -26,7 +30,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   # Scheduled runs queue instead, so that a run that takes longer than an hour
   # is not cancelled by the next hourly run.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -60,6 +64,8 @@ jobs:
       any: ${{ steps.plan.outputs.any }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - uses: prefix-dev/setup-pixi@9936258fee697aff89b3fed6ca1f80a382ef694e # v0.11.3
         with:
@@ -143,6 +149,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Download the pixi.lock of the plan
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -166,11 +174,16 @@ jobs:
   # The stages run in dependency order. A stage also runs when the one before
   # it was skipped, i.e. had nothing to build, and then builds against the
   # upstream nightlies in the channel.
+  #
+  # The calls of build-stage.yml keep the ./... form rather than the
+  # self-repository form ($/...) that zizmor asks for, as actionlint (1.7.12)
+  # rejects the latter as an invalid reusable workflow call. Switch to it once
+  # actionlint supports it.
   cyclus:
     name: cyclus
     needs: plan
     if: needs.plan.outputs.cyclus != '[]'
-    uses: ./.github/workflows/build-stage.yml
+    uses: ./.github/workflows/build-stage.yml # zizmor: ignore[self-repository]
     with:
       jobs: ${{ needs.plan.outputs.cyclus }}
       source-env: ${{ needs.plan.outputs.source-env }}
@@ -182,7 +195,7 @@ jobs:
       !cancelled()
       && needs.plan.result == 'success'
       && needs.plan.outputs.cycamore != '[]'
-    uses: ./.github/workflows/build-stage.yml
+    uses: ./.github/workflows/build-stage.yml # zizmor: ignore[self-repository]
     with:
       jobs: ${{ needs.plan.outputs.cycamore }}
       source-env: ${{ needs.plan.outputs.source-env }}
@@ -194,7 +207,7 @@ jobs:
       !cancelled()
       && needs.plan.result == 'success'
       && needs.plan.outputs.cymetric != '[]'
-    uses: ./.github/workflows/build-stage.yml
+    uses: ./.github/workflows/build-stage.yml # zizmor: ignore[self-repository]
     with:
       jobs: ${{ needs.plan.outputs.cymetric }}
       source-env: ${{ needs.plan.outputs.source-env }}
@@ -216,6 +229,8 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - uses: prefix-dev/setup-pixi@9936258fee697aff89b3fed6ca1f80a382ef694e # v0.11.3
         with:
