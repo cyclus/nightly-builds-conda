@@ -142,6 +142,8 @@ tests:
       run:
         - which
         - cxx-compiler
+        - cmake
+        - make
         - pytest
         - pytables
     script:
