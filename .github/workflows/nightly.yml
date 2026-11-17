@@ -15,6 +15,10 @@ on:
     paths-ignore:
       - "**.md"
       - LICENSE
+      # Only checked by .github/workflows/lint.yml
+      - .pre-commit-config.yaml
+      - .github/dependabot.yml
+      - .github/workflows/lint.yml
   schedule:
     # Minute 17, as GitHub delays scheduled runs at the top of the hour the most
     - cron: "17 * * * *"
