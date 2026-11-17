@@ -17,12 +17,6 @@ package:
 source:
   git: https://github.com/cyclus/cycamore.git
   rev: ${{ git_rev }}
-  patches:
-    # Boost 1.89 removed the compiled Boost.System stub library and Boost 1.89 to
-    # 1.91 have no CMake package for it, so requiring the system component fails;
-    # same change as made to cyclus in https://github.com/cyclus/cyclus/pull/1985,
-    # not yet made in cycamore
-    - patches/make-the-system-component-of-Boost-optional.patch
 
 build:
   # See recipes/cyclus/recipe.yaml for when to bump this.
