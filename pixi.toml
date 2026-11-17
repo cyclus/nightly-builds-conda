@@ -17,10 +17,15 @@ conda-forge-pinning = "*"
 python = ">=3.15.2,<3.16"
 pyyaml = ">=6.0.3,<7"
 
+[feature.lint.dependencies]
+prek = ">=0.5.11,<0.6"
+
+[environments]
 # Only the tools of scripts/plan_builds.py, which renders the recipes in the
 # default environment, so that the plan is made with the pinning of the builds
-[environments]
 plan = { features = ["plan"], no-default-feature = true }
+# Only prek, which installs the environments of the hooks on its own
+lint = { features = ["lint"], no-default-feature = true }
 
 [tasks.resolve]
 # Prints the <PACKAGE>_GIT_REV and <PACKAGE>_VERSION that the recipes read,
@@ -58,3 +63,8 @@ rattler-build build \
 --output-dir output
 """
 description = "Build and test recipes against the conda-forge global pinning"
+
+[feature.lint.tasks.lint]
+# Extra arguments are passed to prek, e.g. a hook id to run only that hook
+cmd = "prek run --all-files"
+description = "Run the pre-commit hooks of .pre-commit-config.yaml on the repository"

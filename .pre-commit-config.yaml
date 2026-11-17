@@ -1,0 +1,10 @@
+# Run with 'pixi run lint', or install as a git hook with
+# 'pixi run --environment lint prek install'. The revs are pinned to commits,
+# as zizmor recommends, and can be updated with
+# 'pixi run --environment lint prek autoupdate --freeze'.
+repos:
+  # Security audit of the GitHub Actions workflows and the Dependabot config
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: 06a39750ec31860bb44f2acf67182c40016cd1e7 # frozen: v1.32.0
+    hooks:
+      - id: zizmor
