@@ -36,12 +36,16 @@ build:
   # -DPYTHON_SITE_PACKAGES: cyclus otherwise installs its Python modules into the
   # user site (python -m site --user-site), which is under $HOME, i.e. $SRC_DIR
   # in rattler-build, so they would be missing from the package
+  # --parallel: builds with OpenMP (-DPARALLEL=TRUE) so that the ticks and tocks
+  # of the C++ agents run multithreaded, with the thread count set at run time by
+  # cyclus -j/--nthreads (default 1)
   script: >-
     "${PYTHON}" install.py
     --prefix="${PREFIX}"
     --deps-root="${PREFIX}"
     --allow-milps
     --slow
+    --parallel
     ${CMAKE_ARGS}
     -DPython3_EXECUTABLE="${PYTHON}"
     -DPYTHON_SITE_PACKAGES="${SP_DIR}"
@@ -91,6 +95,13 @@ requirements:
     - libpython
     - pandas
     - cython
+    # clang does not ship an OpenMP runtime, unlike GCC (libgomp); its run_export
+    # adds it to run:, where agents built against cyclus also need omp.h, as the
+    # installed share/cyclus/cyclus_default_unit_test_driver.cc includes it when
+    # platform.h sets CYCLUS_IS_PARALLEL 1
+    - if: osx
+      then:
+        - llvm-openmp
     # build-time code generation runs under the host python; keeping jinja2 out
     # of build: avoids a second interpreter in BUILD_PREFIX that CMake finds first
     - jinja2
@@ -141,6 +152,7 @@ tests:
     requirements:
       run:
         - which
+        - grep
         - cxx-compiler
         - cmake
         - make
@@ -148,6 +160,8 @@ tests:
         - pytables
     script:
       - which cyclus
+      # --parallel took effect: OpenMP was found and enabled at configure time
+      - grep -q "CYCLUS_IS_PARALLEL 1" "${PREFIX}/include/cyclus/platform.h"
 
       - cyclus --version
       - cyclus --path
