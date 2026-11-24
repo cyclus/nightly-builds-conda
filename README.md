@@ -61,6 +61,8 @@ The file name of a nightly, e.g. `cycamore-1.6.0.post206-py315h55b1f84_0.conda`,
 
 `scripts/plan_builds.py` renders all recipes for all platforms and plans a build job for each package whose file name is not in the channel yet. A new cycamore commit thus rebuilds cycamore and cymetric, but not cyclus, and a new cyclus commit rebuilds all three.
 
+A change of the global pinning that rebuilds a commit already in the channel adds a package with the same version and build number but a new hash (e.g. `cyclus-x.y.z.post123-py315h<new hash>_0.conda` next to `cyclus-x.y.z.post123-py315h<old hash>_0.conda`), so the build number is deliberately not bumped for it. The solvers still prefer the newer package: when version and build number are equal, both rattler (Pixi) and the libsolv of conda-forge (conda, mamba) prefer the package whose dependencies allow the higher versions, and then the one with the newer `timestamp`. The older packages stay in the channel for environments whose other requirements only fit the older pins. Bumping the build number with every pinning update would rebuild every package including those whose pins did not change.
+
 `.github/workflows/nightly.yml` runs
 
 - **hourly**, with the pinning in `pixi.lock` on `main`, so that only new commits are built. Jobs that failed before are left out until the next nightly run, so that a broken `main` is not rebuilt every hour.
